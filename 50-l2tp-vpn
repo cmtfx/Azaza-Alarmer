@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ##########
-# v0.3.4 #
+# v0.3.5 #
 ##########
 
 logger -t 50-l2tp-vpn -p user.info "[$(whoami)] start script 50-l2tp-vpn"
@@ -10,6 +10,7 @@ logger -t 50-l2tp-vpn -p user.info "[$(whoami)] start script 50-l2tp-vpn"
 use_tg="false"
 bot_token="<TG_TOKEN>"
 chat_id="<CHAT_ID>"
+chat_ids=("<CHAT_IDs>")
 r_gw="<IP_ADDRESS>"
 nets=("<NETWORKS>")
 
@@ -19,7 +20,9 @@ msgs=([0]="[$(whoami)] tg notify is disabled" [1]="[$(whoami)] wrong parameter o
 ppp_addr=$(ifconfig | grep -A1 'ppp[[:digit:]+]' | grep 'destination ' | awk -v addr=$r_gw '{if ($NF == addr) print $NF}')
 
 notify_tg () {
-  curl -s -X POST https://api.telegram.org/bot$bot_token/sendMessage -d chat_id=$chat_id -d text="${msgs[5]} %0A ${notify_msg[*]}"
+  for i in ${chat_ids[@]}; do
+    curl -s -X POST https://api.telegram.org/bot$bot_token/sendMessage -d chat_id=$i -d text="${msgs[5]} %0A ${notify_msg[*]}"
+  done
 }
 logger_sl () {
   if [ -z "$1" ] ; then
