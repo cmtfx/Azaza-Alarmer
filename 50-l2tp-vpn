@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ##########
-# v0.3.5 #
+# v0.4.0 #
 ##########
 
 logger -t 50-l2tp-vpn -p user.info "[$(whoami)] start script 50-l2tp-vpn"
@@ -13,11 +13,12 @@ chat_id="<CHAT_ID>"
 chat_ids=("<CHAT_IDs>")
 r_gw="<IP_ADDRESS>"
 nets=("<NETWORKS>")
+link="<TYPE OF LINK [gre, ppp, eth, etc]>"
 
 # init
 notify_msg=()
-msgs=([0]="[$(whoami)] tg notify is disabled" [1]="[$(whoami)] wrong parameter on \"string 10\"" [2]="[$(whoami)] ppp_addr is empty" [3]="[$(whoami)] parameter to logger_sl was not passed" [4]="$(whoami) from $(hostname) on $(date) added routes to your AS" [5]="$(whoami) from $(hostname) on $(date) sent messsge:" [6]="routes NOT added to your AS")
-ppp_addr=$(ifconfig | grep -A1 'ppp[[:digit:]+]' | grep 'destination ' | awk -v addr=$r_gw '{if ($NF == addr) print $NF}')
+msgs=([0]="[$(whoami)] tg notify is disabled" [1]="[$(whoami)] wrong parameter on \"string 10\"" [2]="[$(whoami)] tun_addr is empty" [3]="[$(whoami)] parameter to logger_sl was not passed" [4]="$(whoami) from $(hostname) on $(date) added routes to your AS" [5]="$(whoami) from $(hostname) on $(date) sent messsge:" [6]="routes NOT added to your AS")
+tun_addr=$(ifconfig | grep -A1 "$link[[:digit:]+]" | grep 'destination ' | awk -v addr=$r_gw '{if ($NF == addr) print $NF}')
 
 notify_tg () {
   for i in ${chat_ids[@]}; do
@@ -32,10 +33,10 @@ logger_sl () {
   fi
 }
 
-if [[ -z "$ppp_addr" ]] ; then
+if [[ -z "$tun_addr" ]] ; then
   logger_sl 2
   notify_msg+=( "${msgs[6]} %0A" )
-elif [[ $ppp_addr == $r_gw ]] ; then
+elif [[ $tun_addr == $r_gw ]] ; then
   n=0
   sleep 1
   for i in ${nets[@]}; do
