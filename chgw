@@ -1,0 +1,90 @@
+#!/bin/bash
+
+##########
+# v0.0.4 #
+##########
+
+##########
+# params #
+##########
+name="chgw"
+use_tg="false"
+bot_token="<TG_TOKEN>"
+chat_id="<CHAT_ID>"
+chat_ids=("<CHAT_IDs>")
+checked_gw="<IP_ADDRESS>"
+notify_msg=()
+msg_state=0
+count_req=1
+
+########
+# init #
+########
+if [[ -n "$1" ]]; then ip=$1; else ip=$checked_gw; fi
+if [[ -n "$2" ]]; then use_tg=$2; fi
+msgs=(
+  [0]="[$(whoami)] tg notify is disabled"
+  [1]="[$(whoami)] wrong parameter on \"string 10\""
+  [2]="check_gw is error"
+  [3]="[$(whoami)] parameter to logger_sl was not passed"
+  [4]="$(whoami) from $(hostname) on $(date) %0A sent message: added routes"
+  [5]="$(whoami) from $(hostname) on $(date) sent messsge:"
+  [6]="routes NOT added"
+  [7]="Peer '$ip' is now Reachable!"
+  [8]="Peer '$ip' is now UNREACHABLE!"
+  [9]="Common error"
+)
+notify_tg () {
+  for i in ${chat_ids[@]}; do
+    curl -s -X POST https://api.telegram.org/bot$bot_token/sendMessage -d chat_id=$i -d text="${msgs[5]} %0A ${notify_msg[*]}"
+  done
+}
+logger_sl () {
+  if [[ -z "$1" ]]; then
+    logger -t $name -p user.info "${msgs[3]}"
+  else
+    logger -t $name -p user.info "${msgs[$1]}"
+    notify_msg=( "${msgs[$1]}" )
+  fi
+}
+check_gw () {
+  result=$(ping -c $count_req -i 0.2 -W 0.5 $ip &>/dev/null ; echo $?)
+  case $result in
+    0)
+      if [[ $status -ne 0 ]]; then status=0; msg_state=0; fi
+      logger_sl 7
+      ;;
+    1)
+      if [[ $status -ne 1 ]]; then status=1; msg_state=0; fi
+      logger_sl 8
+      ;;
+    2)
+      logger_sl 9
+      ;;
+    *)
+      logger_sl 2
+      ;;
+  esac
+}
+sent_msg () {
+  case $use_tg in
+    true | 1)
+      notify_tg
+      msg_state=1
+      ;;
+    false | 0)
+      logger_sl 0
+      ;;
+    *)
+      logger_sl 1
+      ;;
+  esac
+}
+
+while true; do
+check_gw
+if [[ $msg_state -ne 1 ]]; then sent_msg; fi
+sleep 5
+done
+
+exit $?
